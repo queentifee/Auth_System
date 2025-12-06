@@ -1,98 +1,380 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Authentication + API Key System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A production-ready authentication system built with NestJS and PostgreSQL that supports both JWT-based user authentication and API key-based service-to-service communication.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
+- **User Authentication** - Secure signup/login with JWT tokens
+- **API Key Management** - Generate, list, and revoke API keys for services
+- **Flexible Authentication** - Support for both JWT and API key authentication
+- **Security Best Practices** - Password hashing, token expiration, key revocation
+- **Multiple Expiration Options** - Set expiration by date or days from now
+- **TypeScript** - Full type safety throughout the application.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+##  Prerequisites
 
-## Project setup
+- Node.js (v16 or higher)
+- PostgreSQL (v12 or higher)
+- npm or yarn
+
+## Installation
+
+### 1. Clone and Install Dependencies
 
 ```bash
-$ npm install
+npm install @nestjs/common @nestjs/core @nestjs/platform-express
+npm install @nestjs/typeorm typeorm pg
+npm install @nestjs/jwt @nestjs/passport passport passport-jwt
+npm install @nestjs/config
+npm install bcrypt class-validator class-transformer
+npm install --save-dev @types/bcrypt @types/passport-jwt
 ```
 
-## Compile and run the project
+### 2. Database Setup
 
 ```bash
-# development
-$ npm run start
+# Create database
+createdb auth_system
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Or via psql
+psql -U postgres
+CREATE DATABASE auth_system;
 ```
 
-## Run tests
+### 3. Environment Configuration
+
+Create a `.env` file in the root directory:
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=auth_system
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+```
+
+### 4. Run the Application
 
 ```bash
-# unit tests
-$ npm run test
+# Development mode
+npm run start:dev
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Production mode
+npm run build
+npm run start:prod
 ```
 
-## Deployment
+The server will start on `http://localhost:3000`
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+##  API Documentation
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Authentication Endpoints
 
+#### Signup
+```http
+POST /auth/signup
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User created successfully",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+#### Login
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Response:** Same as signup
+
+### API Key Management
+
+#### Create API Key (Requires JWT)
+```http
+POST /keys/create
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+
+{
+  "name": "My Service Key",
+  "expiresAt": "2025-12-31"
+}
+```
+
+**Expiration Options:**
+- `"expiresAt": "2025-12-31T23:59:59Z"` - Full ISO timestamp
+- `"expiresAt": "2025-12-31"` - Date only
+- Omit both for no expiration
+
+**Response:**
+```json
+{
+  "message": "API key created successfully",
+  "apiKey": {
+    "id": "uuid",
+    "key": "sk_abc123...",
+    "name": "My Service Key",
+    "expiresAt": "2026-01-05T00:00:00.000Z",
+    "createdAt": "2025-12-06T00:00:00.000Z"
+  }
+}
+```
+
+ **Save the `key` immediately! It's only shown once.**
+
+#### List API Keys (Requires JWT)
+```http
+GET /keys
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Response:**
+```json
+{
+  "apiKeys": [
+    {
+      "id": "uuid",
+      "name": "My Service Key",
+      "expiresAt": "2026-01-05T00:00:00.000Z",
+      "revoked": false,
+      "createdAt": "2025-12-06T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Revoke API Key (Requires JWT)
+```http
+DELETE /keys/:id/revoke
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+### Protected Routes
+
+#### User-Only Route (JWT Required)
+```http
+GET /protected/user-only
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+#### Service-Only Route (API Key Required)
+```http
+GET /protected/service-only
+x-api-key: sk_your_api_key_here
+```
+
+#### Flexible Route (JWT or API Key)
+```http
+GET /protected/flexible
+Authorization: Bearer YOUR_JWT_TOKEN
+# OR
+x-api-key: sk_your_api_key_here
+```
+
+#### Public Route (No Auth)
+```http
+GET /protected/public
+```
+
+##  Testing with Postman
+
+### 1. Setup Environment Variables
+Create a Postman environment with:
+- `jwt_token` - Your JWT token
+- `api_key` - Your API key
+
+### 2. Auto-Save Tokens
+In the **Tests** tab after signup/login:
+```javascript
+pm.environment.set("jwt_token", pm.response.json().token);
+```
+
+After creating API key:
+```javascript
+pm.environment.set("api_key", pm.response.json().apiKey.key);
+```
+
+### 3. Use Variables in Headers
+- JWT: `Authorization: Bearer {{jwt_token}}`
+- API Key: `x-api-key: {{api_key}}`
+
+## 🏗️ Project Structure
+
+```
+src/
+├── entities/
+│   ├── user.entity.ts          # User database model
+│   └── api-key.entity.ts       # API Key database model
+├── auth/
+│   ├── auth.module.ts          # Auth module configuration
+│   ├── auth.controller.ts      # Signup/Login endpoints
+│   ├── auth.service.ts         # Authentication logic
+│   └── dto/
+│       └── auth.dto.ts         # Request validation DTOs
+├── keys/
+│   ├── keys.module.ts          # API Keys module
+│   ├── keys.controller.ts      # Key management endpoints
+│   ├── keys.service.ts         # Key creation/validation logic
+│   └── dto/
+│       └── create-api-key.dto.ts
+├── guards/
+│   ├── jwt-auth.guard.ts       # JWT authentication guard
+│   ├── api-key.guard.ts        # API Key authentication guard
+│   └── flexible-auth.guard.ts  # Both JWT and API Key guard
+├── protected/
+│   ├── protected.module.ts     # Demo protected routes module
+│   └── protected.controller.ts # Example protected endpoints
+├── app.module.ts               # Root application module
+└── main.ts                     # Application entry point
+```
+
+##  Security Features
+
+- **Password Hashing** - Bcrypt with salt rounds for secure password storage
+- **JWT Expiration** - Tokens expire after 24 hours
+- **API Key Expiration** - Custom expiration dates for each key
+- **Key Revocation** - Instantly disable compromised keys
+- **Input Validation** - Class-validator ensures data integrity
+- **Type Safety** - TypeScript prevents runtime errors
+
+##  Database Schema
+
+### Users Table
+| Column    | Type      | Description              |
+|-----------|-----------|--------------------------|
+| id        | UUID      | Primary key              |
+| email     | VARCHAR   | Unique email address     |
+| password  | VARCHAR   | Hashed password          |
+| isActive  | BOOLEAN   | Account status           |
+| createdAt | TIMESTAMP | Account creation date    |
+
+### API Keys Table
+| Column    | Type      | Description              |
+|-----------|-----------|--------------------------|
+| id        | UUID      | Primary key              |
+| key       | VARCHAR   | Unique API key (indexed) |
+| name      | VARCHAR   | Key description          |
+| expiresAt | TIMESTAMP | Expiration date (nullable)|
+| revoked   | BOOLEAN   | Revocation status        |
+| createdAt | TIMESTAMP | Creation date            |
+| userId    | UUID      | Foreign key to users     |
+
+##  Use Cases
+
+### User Authentication Flow
+1. User signs up → receives JWT token
+2. User includes token in `Authorization: Bearer <token>` header
+3. Access user-specific routes and resources
+
+### Service-to-Service Flow
+1. Admin creates API key via authenticated endpoint
+2. Service stores key securely
+3. Service includes key in `x-api-key` header for requests
+4. Access service-specific routes without user context
+
+### Flexible Authentication
+Some routes accept both methods:
+- Web dashboard uses JWT (user session)
+- Background services use API keys
+- Same endpoint, different auth methods
+
+## Configuration
+
+### JWT Settings
+Edit in `auth/auth.module.ts`:
+```typescript
+JwtModule.register({
+  secret: process.env.JWT_SECRET,
+  signOptions: { expiresIn: '24h' }, // Change token lifetime
+})
+```
+
+### Database Settings
+Edit in `app.module.ts`:
+```typescript
+TypeOrmModule.forRoot({
+  synchronize: true, // Set to false in production
+  // Use migrations instead
+})
+```
+
+##  Production Checklist
+
+- [ ] Change `JWT_SECRET` to cryptographically secure random string
+- [ ] Set `synchronize: false` in TypeORM configuration
+- [ ] Set up database migrations
+- [ ] Add rate limiting (e.g., @nestjs/throttler)
+- [ ] Enable HTTPS/TLS
+- [ ] Add request logging
+- [ ] Set up monitoring and alerts
+- [ ] Configure CORS properly
+- [ ] Add helmet for security headers
+- [ ] Implement refresh tokens
+- [ ] Add API documentation (Swagger)
+- [ ] Set up CI/CD pipeline
+
+##  Common Issues
+
+### "Cannot find module '@nestjs/common'"
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm install @nestjs/common @nestjs/core @nestjs/platform-express
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### "Connection refused" database error
+Ensure PostgreSQL is running:
+```bash
+# macOS
+brew services start postgresql
 
-## Resources
+# Linux
+sudo systemctl start postgresql
 
-Check out a few resources that may come in handy when working with NestJS:
+# Check connection
+psql -U postgres -h localhost
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### "Invalid token" errors
+- Token may have expired (24h default)
+- Check JWT_SECRET matches between signup and validation
+- Ensure token is properly formatted: `Bearer <token>`
 
-## Support
+##  Technology Stack
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- **NestJS** - Progressive Node.js framework with TypeScript
+- **TypeORM** - ORM for type-safe database operations
+- **PostgreSQL** - Relational database
+- **JWT** - Stateless authentication tokens
+- **Bcrypt** - Password hashing
+- **Class Validator** - DTO validation
 
-## Stay in touch
+## 📄 License
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+MIT
 
-## License
+## 👤 Author
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Built for service-to-service authentication requirements
+
+---
+
+**Need help?** Check the API examples above or create an issue.
