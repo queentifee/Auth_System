@@ -9,7 +9,7 @@ A production-ready authentication system built with NestJS and PostgreSQL that s
 - **Flexible Authentication** - Support for both JWT and API key authentication
 - **Security Best Practices** - Password hashing, token expiration, key revocation
 - **Multiple Expiration Options** - Set expiration by date or days from now
-- **TypeScript** - Full type safety throughout the application
+- **TypeScript** - Full type safety throughout the application.
 
 ##  Prerequisites
 
