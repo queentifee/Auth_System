@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { ApiKey } from 'src/entities/api-key.entity';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 
@@ -13,8 +14,8 @@ export class KeysService {
   ) {}
 
   async createApiKey(userId: string, dto: CreateApiKeyDto) {
-    const key = this.generateApiKey();
-
+    const rawKey = this.generateApiKey();
+    const haskedKey = await bcrypt.hash(rawKey, 10);
      let expirationDate: Date | undefined;
     
     if (dto.expiresAt) {
@@ -25,7 +26,7 @@ export class KeysService {
     }
     
     const apiKey = this.apiKeyRepo.create({
-      key,
+      key: haskedKey,
       name: dto.name,
       userId,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
@@ -37,7 +38,7 @@ export class KeysService {
       message: 'API key created successfully',
       apiKey: {
         id: apiKey.id,
-        key: apiKey.key,
+        key: rawKey,
         name: apiKey.name,
         expiresAt: apiKey.expiresAt,
         createdAt: apiKey.createdAt,
@@ -70,22 +71,29 @@ export class KeysService {
     return { message: 'API key revoked successfully' };
   }
 
-  async validateApiKey(key: string): Promise<ApiKey | null> {
-    const apiKey = await this.apiKeyRepo.findOne({
-      where: { key },
-      relations: ['user'],
-    });
+ async validateApiKey(rawKey: string): Promise<ApiKey | null> {
+  const allKeys = await this.apiKeyRepo.find({
+    relations: ['user'],
+  });
 
-    if (!apiKey || apiKey.revoked) {
-      return null;
+  for (const apiKey of allKeys) {
+    const isMatch = await bcrypt.compare(rawKey, apiKey.key);
+    
+    if (isMatch) {
+      if (apiKey.revoked) {
+        return null; 
+      }
+
+      if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
+        return null;
+      }
+      
+      return apiKey; 
     }
-
-    if (apiKey.expiresAt && new Date() > apiKey.expiresAt) {
-      return null;
-    }
-
-    return apiKey;
   }
+
+  return null;
+}
 
   private generateApiKey(): string {
     return 'sk_' + crypto.randomBytes(32).toString('hex');

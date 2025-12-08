@@ -22,7 +22,11 @@ export class ProtectedController {
   serviceOnly(@Req() req) {
     return {
       message: 'This route is for service-to-service calls only (API Key)',
-      user: req.user,
+      // user: req.user,
+       user: {
+        id: req.user.id,
+        email: req.user.email,
+      },
       apiKey: {
         id: req.apiKey.id,
         name: req.apiKey.name,
@@ -37,7 +41,11 @@ export class ProtectedController {
     return {
       message: 'This route accepts both JWT and API Key authentication',
       authType: req.authType,
-      user: req.user,
+      // user: req.user,
+       user: {
+        id: req.user.id,
+        email: req.user.email,
+      },
       ...(req.apiKey && {
         apiKey: {
           id: req.apiKey.id,
